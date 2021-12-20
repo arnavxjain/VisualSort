@@ -9,15 +9,21 @@ class DrawInfo:
 	WHITE = 255, 255, 255
 	GREEN = 24, 254, 122
 	BLUE = 60, 20, 180
-	YELLOW = 245, 229, 142
+	YELLOW = 254, 222, 58
 	RED = 255, 0, 0
 	GREY = 128, 128, 128
-	BG = WHITE
+	BG = BLACK
 
 	GRADIENTS = [
-		(128, 128, 128),
-		(160, 160, 160),
-		(192, 192, 192)
+		(234, 104, 170),
+		(143, 101, 187),
+		(57, 98, 203)
+	]
+
+	BLUE_GRADIENT = [
+		(73, 73, 255),
+		(120, 121, 255),
+		(163, 163, 255)
 	]
 
 	myfont = pygame.font.Font("Poppins-Medium.ttf", 20)
@@ -45,16 +51,20 @@ class DrawInfo:
 		self.start_x = self.SIDE_PADDING // 2
 
 
-def draw(draw_info):
+def draw(draw_info, algo_name, ascending):
 	draw_info.window.fill(draw_info.BG)
- 
-	controls = draw_info.myfont.render("R : Reset | A : Ascending | D : Dsecending | Space : Initialize Sort", 1, draw_info.BLACK)
-	draw_info.window.blit(controls, (draw_info.width/2 - controls.get_width()/2, 5)) 
 
-	sorting = draw_info.myfont.render("I : Insertion Sort | B : Bubble Sort", 1, draw_info.BLACK)
-	draw_info.window.blit(sorting, (draw_info.width/2 - sorting.get_width()/2, 25)) 
+	title = draw_info.myfont.render(f"{algo_name} - {'Ascending' if ascending else 'Descending'}", 1, draw_info.WHITE)
+	draw_info.window.blit(title, (draw_info.width/2 - title.get_width()/2, 12)) 
+ 
+	controls = draw_info.myfont.render("R : Reset | A : Ascending | D : Dsecending | Space : Initialize Sort", 1, draw_info.WHITE)
+	draw_info.window.blit(controls, (draw_info.width/2 - controls.get_width()/2, 40)) 
+
+	sorting = draw_info.myfont.render("I : Insertion Sort | B : Bubble Sort", 1, draw_info.WHITE)
+	draw_info.window.blit(sorting, (draw_info.width/2 - sorting.get_width()/2, 70)) 
 
 	draw_list(draw_info)
+
 	pygame.display.update()
 
 
@@ -71,7 +81,7 @@ def draw_list(draw_info, color_positions={}, clear_BG=False):
 		x = draw_info.start_x + i * draw_info.block_width
 		y = draw_info.height - (val - draw_info.min_val) * draw_info.block_height
 
-		color = draw_info.GRADIENTS[i % 3]
+		color = draw_info.BLUE_GRADIENT[i % 3]
 
 		if i in color_positions:
 			color = color_positions[i] 
@@ -84,6 +94,7 @@ def draw_list(draw_info, color_positions={}, clear_BG=False):
 
 def generate_starting_list(n, min_val, max_val):
 	lst = []
+
 	for _ in range(n):
 		val = random.randint(min_val, max_val)
 		lst.append(val)
@@ -99,13 +110,32 @@ def bubble(draw_info, ascending=True):
 			num2 = lst[j + 1]
 
 			if (num1 > num2 and ascending) or (num1 < num2 and not ascending):
-				lst[j], lst[j + i] = lst[j + 1], lst[j]
+				lst[j], lst[j + 1] = lst[j + 1], lst[j]
 				draw_list(draw_info, {j: draw_info.GREEN, j + 1: draw_info.RED}, True)
 				yield True
 
 	return lst
 
+def insertion(draw_info, ascending=True):
+	lst = draw_info.lst
 
+	for i in range(1, len(lst)):
+		current = lst[i]
+
+		while True:
+			ascending_sort = i > 0 and lst[i - 1] > current and ascending
+			descending_sort = i > 0 and lst[i - 1] < current and not ascending
+
+			if not ascending_sort and not descending_sort:
+				break
+
+			lst[i] = lst[i - 1]
+			i = i -1
+			lst[i] = current
+			draw_list(draw_info, {i - 1: draw_info.GREEN, i: draw_info.RED}, True)
+			yield True
+
+	return lst
 
 
 def main():
@@ -123,7 +153,7 @@ def main():
 	sorting_algo_generator = None
 	
 	while run:
-		clock.tick(60)
+		clock.tick(120)
 
 		if sorting:
 			try:
@@ -131,7 +161,7 @@ def main():
 			except StopIteration:
 				sorting = False
 		else:
-			draw(draw_info)
+			draw(draw_info, sorting_header, ascending)
 
 
 		for event in pygame.event.get():
@@ -152,10 +182,21 @@ def main():
 
 
 			elif event.key == pygame.K_a and not sorting:
-				sorting = True
+				# sorting = True
+				ascending = True
 
 			elif event.key == pygame.K_d and not sorting:
 				sorting = False
+				ascending = False
+
+
+			elif event.key == pygame.K_i and not sorting:
+				sorting_algo = insertion
+				sorting_header = "Insertion Sort"
+
+			elif event.key == pygame.K_b and not sorting:
+				sorting_algo = bubble
+				sorting_header = "Bubble Sort"
 
 
 	pygame.quit()
